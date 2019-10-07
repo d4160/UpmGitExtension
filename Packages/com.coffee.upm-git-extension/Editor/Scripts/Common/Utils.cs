@@ -230,7 +230,8 @@ namespace Coffee.PackageManager
 		{
 			if (element == null)
 				return;
-
+			
+            element.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
 			SetElementClass (element, kDisplayNone, !value);
 			element.visible = value;
 		}

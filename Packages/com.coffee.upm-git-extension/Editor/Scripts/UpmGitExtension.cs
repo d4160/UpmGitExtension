@@ -110,8 +110,11 @@ namespace Coffee.PackageManager
 
 		static Expose GetExposedPackages()
 		{
-#if UNITY_2019_1_OR_NEWER
-			return Expose.FromType(tPackageCollection)["packages"];
+#if UNITY_2019_3_OR_NEWER
+			var tPackageDb = Expose.GetType("UnityEditor.PackageManager.UI.PackageDatabase, UnityEditor");
+			return Expose.FromType(tPackageDb).Get("instance").Get("m_Packages");
+#elif UNITY_2019_1_OR_NEWER
+			return Expose.FromType(tPackageCollection)["m_PackageList"];
 #else
 			if (_exPackageWindow == null || !_exPackageWindow.As<EditorWindow>())
 				_exPackageWindow = GetExposedPackageWindow();
@@ -146,7 +149,9 @@ namespace Coffee.PackageManager
 			if (!DocumentActions.IsResourceReady() || !InstallPackageWindow.IsResourceReady() || !GitButton.IsResourceReady())
 				return;
 
-			root = UIUtils.GetRoot(this).Q("rootVisualContainer2");
+			test();
+
+			root = UIUtils.GetRoot(this).Q<TemplateContainer>();
 
 			Debug.Log("UpmGitExtension.InitializeUI 1");
 			// Document actions.
@@ -175,10 +180,10 @@ namespace Coffee.PackageManager
 			var packageList = Expose.FromObject(root.Q("packageList"));
 			Debug.Log("UpmGitExtension.InitializeUI 5.1" + packageList.Value);
 
-
-			// Action onLoad = packageList["OnLoaded"].As<Action>();
-			// onLoad += OnPackageListLoaded;
-			// packageList["OnLoaded"] = Expose.FromObject(onLoad);
+			Action onLoad = packageList["onPackageListLoaded"].As<Action>();
+			Debug.Log("UpmGitExtension.InitializeUI 5.2" + onLoad);
+			onLoad += OnPackageListLoaded;
+			packageList["onPackageListLoaded"] = Expose.FromObject(onLoad);
 
 			Debug.Log("UpmGitExtension.InitializeUI 6");
 #if UNITY_2019_1_OR_NEWER
@@ -220,11 +225,14 @@ namespace Coffee.PackageManager
 		
 		void UpdateGitPackages(Queue<Expose> packagesToUpdate, Dictionary<string, IEnumerable<string>> results = null)
 		{
+			Debug.Log("UpdateGitPackages 1");
+
 			Debug.LogFormat ("[UpdateGitPackages] {0} package(s) left", packagesToUpdate.Count);
 			phase = Phase.UpdatePackages;
 			bool isRunning = 0 < packagesToUpdate.Count;
 			PlaySpinner(isRunning);
 
+			Debug.Log("UpdateGitPackages 2");
 			// Update task is finished.
 			if (!isRunning)
 			{
@@ -236,12 +244,14 @@ namespace Coffee.PackageManager
 					return;
 				}
 					
+				Debug.Log("UpdateGitPackages 3");
 				// Update package infomation's version.
 				Expose exPackages = GetExposedPackages();
 				foreach (var pair in results)
 				{
 					try
 					{
+						Debug.Log("UpdateGitPackages 4");
 						Debug.LogFormat ("[UpdateGitPackages] Overwrite {0}", pair.Key);
 						if (exPackages.Call("ContainsKey", pair.Key).As<bool>())
 							UpdatePackageInfoVersions(exPackages[pair.Key], pair.Value);
@@ -252,6 +262,7 @@ namespace Coffee.PackageManager
 					}
 				}
 
+					Debug.Log("UpdateGitPackages 5");
 				// Reload package collection on next frame
 				Debug.LogFormat ("[UpdateGitPackages] Reload on next frame");
 				phase = Phase.ReloadPackageCollection;
@@ -264,12 +275,16 @@ namespace Coffee.PackageManager
 				results = new Dictionary<string, IEnumerable<string>>();
 			}
 
+			Debug.Log("UpdateGitPackages 6");
+			// Debug.Log("OnPackageListLoaded 1.2 " + p["recommendedVersion"]["packageInfo"]["source"].Value);
+			//
 			// 
 			var package = packagesToUpdate.Dequeue();
-			var displayPackage = package["VersionToDisplay"];
-			var packageId = displayPackage["_PackageId"].As<string>();
-			var packageName = package["packageName"].As<string>();
+			var displayPackage = package["recommendedVersion"]["packageInfo"];
+			var packageId = displayPackage["packageId"].As<string>();
+			var packageName = package["name"].As<string>();
 			
+			Debug.Log("UpdateGitPackages 7 " + results.ContainsKey(packageName));
 			// Already get versions.
 			if(packageId == null || results.ContainsKey(packageName))
 			{
@@ -278,6 +293,7 @@ namespace Coffee.PackageManager
 				return;
 			}
 			
+					Debug.Log("UpdateGitPackages 8");
 			// Get all branch/tag names in repo.
 			var url = PackageUtils.GetRepoUrlForCommand(packageId);
 			Debug.LogFormat ("[UpdateGitPackages] GetRefs: {0}", packageName);
@@ -290,19 +306,39 @@ namespace Coffee.PackageManager
 
 		void UpdatePackageInfoVersions(Expose exPackage, IEnumerable<string> versions)
 		{
+			Debug.Log("UpdatePackageInfoVersions 1");
 			Expose vers = Expose.FromObject(versions
 				.Select(x => regVersionValid.IsMatch(x) ? x : "0.0.0-" + x)
 				.Distinct()
 				.OrderBy(x => x)
 				.ToArray());
 
-			var exInfo = exPackage["VersionToDisplay"]["Info"];
-			var exVersions = exInfo["m_Versions"];
-			exVersions["m_All"] = vers;
-			exVersions["m_Compatible"] = vers;
+			Debug.Log("UpdatePackageInfoVersions 2");
+			var exInfo = exPackage["recommendedVersion"]["packageInfo"];
+			var exVersions = exPackage["m_VersionList"]["m_Versions"];
+			// exVersions["m_All"] = vers;
+			// exVersions["m_Compatible"] = vers;
 
+					Debug.Log("UpdatePackageInfoVersions 3");
 			try
 			{
+				Type tUpmPackageVersion = Expose.GetType("UnityEditor.PackageManager.UI.UpmPackageVersion, UnityEditor");
+				Type tSemVersion = Expose.GetType("UnityEditor.PackageManager.UI.SemVersion, UnityEditor");
+				
+				var semver = Expose.FromType(tSemVersion).Call("Parse","1.0.0", false);
+				Debug.Log("UpdatePackageInfoVersions 3 " + semver);
+				var ver1 = Expose.FromType(tUpmPackageVersion).New(exInfo.Value, false, semver.Value, exInfo["displayName"].Value);
+				Debug.Log("UpdatePackageInfoVersions 3 " + ver1);
+
+				Debug.Log("UpdatePackageInfoVersions 4 " + exInfo);
+
+				var json = JsonUtility.ToJson(exInfo.Value);
+					Debug.Log("UpdatePackageInfoVersions 4.1 " + json);
+				
+				var ver = JsonUtility.FromJson(json, Expose.GetType("UnityEditor.PackageManager.UI.UpmPackageVersion, UnityEditor"));
+				Debug.Log("UpdatePackageInfoVersions 4.2 " + ver);
+				// exVersions.Call("Add", )
+
 				Expose exPackageInfoList = Expose.FromType(tUpmBaseOperation).Call("FromUpmPackageInfo", exInfo, true); // Convert to PackageInfos
 				foreach (Expose x in exPackageInfoList)
 				{
@@ -311,6 +347,7 @@ namespace Coffee.PackageManager
 					x["IsDiscoverable"] = Expose.FromObject(true);
 #endif
 				}
+					Debug.Log("UpdatePackageInfoVersions 5");
 				exPackage["source"] = exPackageInfoList;
 			}
 			catch (Exception e)
@@ -343,9 +380,24 @@ namespace Coffee.PackageManager
 		}
 
 		//bool updateRequest = false;
+		[MenuItem("hogehoge/hoge")]
+		static void test()
+		{
+			var tPackageDb = Expose.GetType("UnityEditor.PackageManager.UI.PackageDatabase, UnityEditor");
+			var packageDb = Expose.FromType(tPackageDb).Get("instance");
+			Debug.Log(packageDb);
+
+			var action = packageDb.Get("onRefreshOperationStart").As<Action>();
+			Debug.Log(action);
+
+			action += () =>{
+				Debug.Log("onRefreshOperationStart");
+			};
+		}
 
 		void OnPackageListLoaded()
 		{
+			Debug.Log("OnPackageListLoaded 0");
 			Debug.LogFormat ("[UpdateGitPackages] OnPackageListLoaded {0}, {1}", phase, Time.frameCount);
 			if (phase == Phase.ReloadPackageCollection)
 			{
@@ -355,20 +407,31 @@ namespace Coffee.PackageManager
 				
 			try
 			{
+				Debug.Log("OnPackageListLoaded 1");
+				Debug.Log("OnPackageListLoaded 1.0 " + GetExposedPackages());
+
 				// Get repository refs as versions and update package infos.
 				foreach (Expose p in GetExposedPackages()["Values"])
 				{
+					Debug.Log("OnPackageListLoaded 1.1 " + p["recommendedVersion"].Value);
+					Debug.Log("OnPackageListLoaded 1.1 " + p["recommendedVersion"]["uniqueId"].Value);
+					Debug.Log("OnPackageListLoaded 1.2 " + p["recommendedVersion"]["packageInfo"]["source"].Value);
+
 					// Is it git package?
-					var origin = p["VersionToDisplay"]["Origin"].As<int>();
-					if (origin == 5 || origin == 99)
+					var origin = p["recommendedVersion"]["packageInfo"]["source"].As<int>();
+					if (origin == 5)
 					{
 						gitPackages.Enqueue(p);
 					}
 				}
+				Debug.Log("OnPackageListLoaded 2");
 
 				if (phase == Phase.Idle || phase == Phase.Initialize)
 				{
 					Debug.LogFormat ("[UpdateGitPackages] Start task to update git package.");
+
+					Debug.Log("OnPackageListLoaded 3");
+
 					UpdateGitPackages(gitPackages, null);
 				}
 			}

@@ -54,11 +54,6 @@ namespace Coffee.PackageManager
 			viewChangelogButton = root.Q<Button> ("viewChangelogButton");
 			viewLicenseButton = root.Q<Button> ("viewLicenseButton");
 
-			Debug.Log("DocumentActions 5");
-			// Adjust host icon.
-			hostButton.RemoveFromClassList ("unity-button");
-			hostButton.RemoveFromClassList ("button");
-
 			Debug.Log("DocumentActions 6");
 			// Add callbacks
 			hostButton.clickable.clicked += () => Application.OpenURL (PackageUtils.GetRepoHttpUrl (packageInfo));
@@ -80,7 +75,6 @@ namespace Coffee.PackageManager
 
 			var host = Settings.GetHostData (packageInfo.packageId);
 			hostButton.tooltip = "View on " + host.Name;
-			hostButton.Q ("logo").style.backgroundImage = host.Logo;
 		}
 
 
