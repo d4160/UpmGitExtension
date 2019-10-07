@@ -66,16 +66,21 @@ namespace Coffee.PackageManager
 			if (phase == Phase.Initialize || packageInfo == null)
 				return;
 
+			Debug.Log("UpmGitExtension.OnPackageSelectionChange 1");
 			// Update document actions.
 			documentActions.SetPackageInfo(packageInfo);
 
+			Debug.Log("UpmGitExtension.OnPackageSelectionChange 2");
 			if (packageInfo.source == PackageSource.Git)
 			{
+			Debug.Log("UpmGitExtension.OnPackageSelectionChange 3");
 				// Show remove button for git package.
 				var removeButton = root.Q<Button>("remove");
+			Debug.Log("UpmGitExtension.OnPackageSelectionChange 3.1 " + removeButton);
 				UIUtils.SetElementDisplay(removeButton, true);
 				removeButton.SetEnabled(true);
 
+			Debug.Log("UpmGitExtension.OnPackageSelectionChange 4");
 				// Show git tag.
 				var tagGit = root.Q("tag-git");
 				UIUtils.SetElementDisplay(tagGit, true);
@@ -141,39 +146,49 @@ namespace Coffee.PackageManager
 			if (!DocumentActions.IsResourceReady() || !InstallPackageWindow.IsResourceReady() || !GitButton.IsResourceReady())
 				return;
 
-			root = UIUtils.GetRoot(this).Q("container");
+			root = UIUtils.GetRoot(this).Q("rootVisualContainer2");
 
+			Debug.Log("UpmGitExtension.InitializeUI 1");
 			// Document actions.
-			documentActions = new DocumentActions(root.Q("detailActions"));
+			documentActions = new DocumentActions(root.Q("detailLinks"));
 
+			Debug.Log("UpmGitExtension.InitializeUI 2");
 			// Install package window.
 			var installPackageWindow = new InstallPackageWindow();
 			root.Add(installPackageWindow);
 
+			Debug.Log("UpmGitExtension.InitializeUI 3");
 			// Add button to open InstallPackageWindow
-			var addButton = root.Q("toolbarAddButton") ?? root.Q("moreAddOptionsButton");
+			var addButton = root.Q("toolbarAddButton") ?? root.Q("moreAddOptionsButton") ?? root.Q("toolbarAddMenu");
 			var gitButton = new GitButton(installPackageWindow.Open);
 			addButton.parent.Insert(addButton.parent.IndexOf(addButton) + 1, gitButton);
 
+			Debug.Log("UpmGitExtension.InitializeUI 4");
 #if UNITY_2018
 			var space = new VisualElement();
 			space.style.flexGrow = 1;
 			addButton.parent.Insert(addButton.parent.IndexOf(addButton), space);
 #endif
 
+			Debug.Log("UpmGitExtension.InitializeUI 5");
 			// Update git packages on load packages
 			var packageList = Expose.FromObject(root.Q("packageList"));
-			Action onLoad = packageList["OnLoaded"].As<Action>();
-			onLoad += OnPackageListLoaded;
-			packageList["OnLoaded"] = Expose.FromObject(onLoad);
+			Debug.Log("UpmGitExtension.InitializeUI 5.1" + packageList.Value);
 
+
+			// Action onLoad = packageList["OnLoaded"].As<Action>();
+			// onLoad += OnPackageListLoaded;
+			// packageList["OnLoaded"] = Expose.FromObject(onLoad);
+
+			Debug.Log("UpmGitExtension.InitializeUI 6");
 #if UNITY_2019_1_OR_NEWER
-			var updateButton = root.Q("packageToolBar").Q<Button>("update");
+			var updateButton = root.Q("packageToolbar").Q<Button>("update");
 #else
 			OnPackageListLoaded();
 			var updateButton = root.Q("updateCombo").Q<Button>("update");
 #endif
 
+			Debug.Log("UpmGitExtension.InitializeUI 7");
 			var detailView = Expose.FromObject(root.Q("detailsGroup"));
 
 			// Override click action.
@@ -195,6 +210,8 @@ namespace Coffee.PackageManager
 
 				detailView.Call("UpdateClick");
 			};
+
+			Debug.Log("UpmGitExtension.InitializeUI 8");
 			Expose.FromObject(updateButton.clickable)["clicked"] = Expose.FromObject(actionUpdate);
 
 			phase = Phase.Idle;

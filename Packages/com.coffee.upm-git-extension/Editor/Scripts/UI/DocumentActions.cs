@@ -29,11 +29,13 @@ namespace Coffee.PackageManager
 
 		public DocumentActions (VisualElement detailActions)
 		{
+			Debug.Log("DocumentActions 1 " + detailActions);
 			originDetailActions = detailActions;
 			originDetailActions.parent.Add (this);
 
 			VisualTreeAsset asset = EditorGUIUtility.Load (TemplatePath) as VisualTreeAsset;
 
+			Debug.Log("DocumentActions 2");
 #if UNITY_2019_1_OR_NEWER
 			root = asset.CloneTree ();
 			styleSheets.Add (AssetDatabase.LoadAssetAtPath<StyleSheet> (StylePath));
@@ -42,18 +44,22 @@ namespace Coffee.PackageManager
 			AddStyleSheetPath (StylePath);
 #endif
 
+			Debug.Log("DocumentActions 3");
 			Add (root);
 
+			Debug.Log("DocumentActions 4");
 			// Find ui elements.
 			hostButton = root.Q<Button> ("hostButton");
 			viewDocumentationButton = root.Q<Button> ("viewDocumentationButton");
 			viewChangelogButton = root.Q<Button> ("viewChangelogButton");
 			viewLicenseButton = root.Q<Button> ("viewLicenseButton");
 
+			Debug.Log("DocumentActions 5");
 			// Adjust host icon.
 			hostButton.RemoveFromClassList ("unity-button");
 			hostButton.RemoveFromClassList ("button");
 
+			Debug.Log("DocumentActions 6");
 			// Add callbacks
 			hostButton.clickable.clicked += () => Application.OpenURL (PackageUtils.GetRepoHttpUrl (packageInfo));
 			viewDocumentationButton.clickable.clicked += () => MarkdownUtils.OpenInBrowser (PackageUtils.GetFilePath (packageInfo, "README.*"));
