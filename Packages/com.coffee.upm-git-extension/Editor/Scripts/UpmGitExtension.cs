@@ -7,12 +7,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System;
+using System.Runtime.CompilerServices;
 
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #else
 using UnityEngine.Experimental.UIElements;
 #endif
+
 
 namespace Coffee.PackageManager
 {
@@ -24,7 +26,7 @@ namespace Coffee.PackageManager
 		//################################
 		static UpmGitExtension ()
 		{
-			PackageManagerExtensions.RegisterExtension (new UpmGitExtension ());
+			//PackageManagerExtensions.RegisterExtension (new UpmGitExtension ());
 		}
 
 		//################################
@@ -111,6 +113,7 @@ namespace Coffee.PackageManager
 		static Expose GetExposedPackages()
 		{
 #if UNITY_2019_3_OR_NEWER
+			// return PackageDatabase.instance.m_Packages;
 			var tPackageDb = Expose.GetType("UnityEditor.PackageManager.UI.PackageDatabase, UnityEditor");
 			return Expose.FromType(tPackageDb).Get("instance").Get("m_Packages");
 #elif UNITY_2019_1_OR_NEWER
@@ -325,19 +328,12 @@ namespace Coffee.PackageManager
 				Type tUpmPackageVersion = Expose.GetType("UnityEditor.PackageManager.UI.UpmPackageVersion, UnityEditor");
 				Type tSemVersion = Expose.GetType("UnityEditor.PackageManager.UI.SemVersion, UnityEditor");
 				
-				var semver = Expose.FromType(tSemVersion).Call("Parse","1.0.0", false);
+				var semver = Expose.FromType(tSemVersion).Call("Parse","5.0.0", false);
 				Debug.Log("UpdatePackageInfoVersions 3 " + semver);
-				var ver1 = Expose.FromType(tUpmPackageVersion).New(exInfo.Value, false, semver.Value, exInfo["displayName"].Value);
-				Debug.Log("UpdatePackageInfoVersions 3 " + ver1);
+				var upmPackageVersion = Expose.FromType(tUpmPackageVersion).New(exInfo.Value, false, semver.Value, exInfo["displayName"].Value);
+				Debug.Log("UpdatePackageInfoVersions 3 " + upmPackageVersion);
 
-				Debug.Log("UpdatePackageInfoVersions 4 " + exInfo);
-
-				var json = JsonUtility.ToJson(exInfo.Value);
-					Debug.Log("UpdatePackageInfoVersions 4.1 " + json);
-				
-				var ver = JsonUtility.FromJson(json, Expose.GetType("UnityEditor.PackageManager.UI.UpmPackageVersion, UnityEditor"));
-				Debug.Log("UpdatePackageInfoVersions 4.2 " + ver);
-				// exVersions.Call("Add", )
+				exVersions.Call("Add", upmPackageVersion);
 
 				Expose exPackageInfoList = Expose.FromType(tUpmBaseOperation).Call("FromUpmPackageInfo", exInfo, true); // Convert to PackageInfos
 				foreach (Expose x in exPackageInfoList)
@@ -371,10 +367,12 @@ namespace Coffee.PackageManager
 
 		void ReloadPackageCollection()
 		{
+					Debug.Log("ReloadPackageCollection 0");
 			var exPackageWindow = GetExposedPackageWindow();
 			if (exPackageWindow == null)
 				return;
 
+					Debug.Log("ReloadPackageCollection 1");
 			Debug.LogFormat ("[UpdateGitPackages] Reloading package collection...");
 			exPackageWindow["Collection"].Call("UpdatePackageCollection", false);
 		}

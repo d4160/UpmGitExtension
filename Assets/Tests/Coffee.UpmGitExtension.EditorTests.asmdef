@@ -1,18 +1,23 @@
 {
     "name": "Coffee.UpmGitExtension.EditorTests",
     "references": [
-        "Coffee.UpmGitExtension.Editor"
-    ],
-    "optionalUnityReferences": [
-        "TestAssemblies"
+        "Coffee.UpmGitExtension.Editor",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
     ],
     "includePlatforms": [
-        "Editor"
+        "XboxOne"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": []
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

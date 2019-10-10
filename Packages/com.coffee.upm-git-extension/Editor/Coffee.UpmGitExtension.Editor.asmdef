@@ -3,16 +3,18 @@
     "references": [
         "Unity.PackageManagerUI.Editor"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
-        "Editor"
+        "XboxOne"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "Markdig.dll"
+        "Markdig.dll",
+        "UnityEditor.PackageManager.Internals.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
