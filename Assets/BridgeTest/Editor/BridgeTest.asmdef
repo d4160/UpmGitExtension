@@ -1,14 +1,16 @@
 {
     "name": "BridgeTest",
-    "references": [],
+    "references": [
+        "Unity.PackageManagerCaptain.Editor"
+    ],
     "optionalUnityReferences": [],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "Unity.PackageManagerCaptain.Editor.dll"
-    ],
-    "autoReferenced": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
     "defineConstraints": []
 }
