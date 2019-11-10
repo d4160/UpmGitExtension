@@ -129,6 +129,8 @@ namespace Coffee.PackageManager
 		VisualElement root;
 		DocumentActions documentActions;
 		readonly Queue<Expose> gitPackages = new Queue<Expose>();
+		InternalBridge internalBridge;
+
 
 		/// <summary>
 		/// Initializes UI.
@@ -141,7 +143,11 @@ namespace Coffee.PackageManager
 			if (!DocumentActions.IsResourceReady() || !InstallPackageWindow.IsResourceReady() || !GitButton.IsResourceReady())
 				return;
 
+			phase = Phase.Idle;
+
 			root = UIUtils.GetRoot(this).Q("container");
+
+			internalBridge = new InternalBridge (root.Q ("packageSpinner"), root.Q ("packageList"), root.Q ("packageList"));
 
 			// Document actions.
 			documentActions = new DocumentActions(root.Q("detailActions"));
@@ -167,10 +173,11 @@ namespace Coffee.PackageManager
 			onLoad += OnPackageListLoaded;
 			packageList["OnLoaded"] = Expose.FromObject(onLoad);
 
+
 #if UNITY_2019_1_OR_NEWER
 			var updateButton = root.Q("packageToolBar").Q<Button>("update");
 #else
-			OnPackageListLoaded();
+			OnPackageListLoaded ();
 			var updateButton = root.Q("updateCombo").Q<Button>("update");
 #endif
 
@@ -216,7 +223,6 @@ namespace Coffee.PackageManager
 
 			Settings.onChangedShowAllVersions = ReloadPackageCollection;
 
-			phase = Phase.Idle;
 		}
 
 		
