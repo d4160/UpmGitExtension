@@ -32,11 +32,12 @@ do
 
 	# Check supported unity versions.
     SUPPORTED_VERSION=`grep -o -e "\"unity\".*$" package.json | sed -e "s/\"unity\": \"\(.*\)\".*$/\1/"`
+    VERSION=`grep -o -e "\"version\".*$" package.json | sed -e "s/\"version\": \"\(.*\)\".*$/\1/"`
     echo "${SUPPORTED_VERSION} ${UNITY}"
 
     [[ "${UNITY}" < "${SUPPORTED_VERSION}" ]] && continue
     echo "  -> OK 2"
 
 	# Output only available names
-    echo $ref >> versions
+    echo ${ref},${VERSION} >> versions
 done

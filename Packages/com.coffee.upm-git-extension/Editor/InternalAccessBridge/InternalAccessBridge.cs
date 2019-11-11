@@ -5,9 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.PackageManager.UI;
-using Coffee.PackageManager;
 using UnityEngine.Experimental.UIElements;
-
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -16,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
 		LoadingSpinner loadingSpinner = null;
 		PackageList packageList = null;
 		PackageDetails packageDetails = null;
+
 
 		public InternalBridge (VisualElement loadingSpinner, VisualElement packageList, VisualElement packageDetails)
 		{
@@ -155,7 +155,85 @@ namespace UnityEditor.PackageManager.UI
 			}
 
 			p.UpdateSource (versionssss);
-			
+		}
+
+        static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/(.+),(.+)$", RegexOptions.Compiled);
+
+		[MenuItem ("Package Test/バージョン追加テスト4")]
+		public static void AssemblyTest4 ()
+		{
+			Debug.Log($"AssemblyTest4");
+
+			// 未アップデート
+			foreach(var p in GetPackages ().Where (x => x.Current.Origin == PackageSource.Git || x.Current.Origin == (PackageSource)99))
+			{
+
+
+				var pInfo = p.Current;
+				pInfo.Origin = (PackageSource)99;
+				Debug.Log($"{pInfo.Name}");
+
+				var json = JsonUtility.ToJson (pInfo);
+				var repoUrl = "git@github.com:mob-sakai/UpmGitExtension.git";
+				GitUtils.GetRefs(repoUrl, refs =>{
+
+
+					var versions = refs.Select(r=>s_regRefs.Match(r))
+					.Where(m=>m.Success)
+					.Select(m=>{
+						var ver = m.Groups[2].Value == m.Groups[3].Value
+						? m.Groups[2].Value
+						: string.Format("{0}+{1}",m.Groups[3].Value,m.Groups[2].Value);
+
+						Debug.Log($"{ver}");
+
+						var newPInfo = JsonUtility.FromJson (json, typeof (PackageInfo)) as PackageInfo;
+						newPInfo.Version = Semver.SemVersion.Parse (m.Groups[2].Value);
+						newPInfo.IsCurrent = false;
+						newPInfo.Origin = (PackageSource)99;
+						return newPInfo;
+					})
+					.Concat(new []{pInfo});
+
+
+					// Debug.Log($"{refs.Count()}");
+
+					// foreach(var r in refs)
+					// {
+					// Debug.Log($"{r}");
+					// }
+
+					// var versions = refs.Select(r=>{
+					// 	var newPInfo = JsonUtility.FromJson (json, typeof (PackageInfo)) as PackageInfo;
+					// 	newPInfo.Version = Semver.SemVersion.Parse (r);
+					// 	newPInfo.IsCurrent = false;
+					// 	newPInfo.Origin = (PackageSource)99;
+					// 	return newPInfo;
+					// }).Concat(new []{pInfo});
+
+					Debug.Log($"{versions.Count()}");
+
+					p.UpdateSource (versions);
+				});
+
+
+			}
+
+
+			// var versions = new string [] { "1.0.0", "2.0.0" };
+
+
+			// List<PackageInfo> versionssss = new List<PackageInfo> ();
+			// versionssss.Add (pInfo);
+			// foreach (var v in versions)
+			// {
+			// 	var newPInfo = JsonUtility.FromJson (json, typeof (PackageInfo)) as PackageInfo;
+			// 	newPInfo.Version = Semver.SemVersion.Parse (v);
+			// 	newPInfo.IsCurrent = false;
+			// 	versionssss.Add (newPInfo);
+			// }
+
+			// p.UpdateSource (versionssss);
 		}
 
 		public void UpdatePackageCollection ()

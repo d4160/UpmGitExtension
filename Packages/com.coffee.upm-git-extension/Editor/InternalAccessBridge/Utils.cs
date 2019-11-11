@@ -13,7 +13,7 @@ using System.IO;
 using System.Linq;
 using Conditional = System.Diagnostics.ConditionalAttribute;
 
-namespace UnityEditor.PackageManager.UI.InternalAccessBridge
+namespace UnityEditor.PackageManager.UI
 {
     //internal class Debug
     //{
@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.InternalAccessBridge
     {
         static readonly StringBuilder s_sbError = new StringBuilder();
         static readonly StringBuilder s_sbOutput = new StringBuilder();
-        static readonly Regex s_regRefs = new Regex("refs/(tags|heads)/(.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
+        static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/(.*),(.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
 
 
         //public static bool IsGitRunning { get; private set; }
@@ -60,14 +60,39 @@ namespace UnityEditor.PackageManager.UI.InternalAccessBridge
         [MenuItem("Packages/getrefs")]
         static void test()
         {
-            Debug.Log(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
-
-
             GetRefs("git@github.com:mob-sakai/UpmGitExtension.git", refs =>
             {
                 Debug.Log(refs.Aggregate((a, b) => a + ", " + b));
             });
         }
+
+
+        // public static void GetPackage(string repoUrl, Action<IEnumerable<string>> callback)
+        // {
+        //     // StringBuilder command = new StringBuilder ();
+		// 	var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        //     var cacheRoot = new DirectoryInfo(Path.Combine(appDir, "UpmGitExtension"));
+        //     var cacheDir = new DirectoryInfo(Path.Combine(cacheRoot.FullName, Uri.EscapeDataString(repoUrl)));
+        //     var cacheFile = new FileInfo(Path.Combine(cacheDir.FullName, "versions"));
+
+        //     // Cached.
+        //     if (cacheFile.Exists && (DateTime.Now - cacheFile.LastWriteTime).TotalMinutes < 1)
+        //     {
+        //         callback(0 < cacheFile.Length ? File.ReadLines(cacheFile.FullName) : Enumerable.Empty<string>());
+        //     }
+        //     else
+        //     {
+        //         var script = "Packages/com.coffee.upm-git-extension/Editor/InternalAccessBridge/get-available-refs.sh";
+        //         var args = string.Format("{0} {1} {2}", repoUrl, cacheDir, UnityEngine.Application.unityVersion);
+        //         ExecuteShell(script, args, (success) =>
+        //         {
+        //             if (success)
+        //                 GetRefs(repoUrl, callback);
+        //             else
+        //                 callback(Enumerable.Empty<string>());
+        //         });
+        //     }
+        // }
 
         public static void GetRefs(string repoUrl, Action<IEnumerable<string>> callback)
         {
@@ -80,12 +105,14 @@ namespace UnityEditor.PackageManager.UI.InternalAccessBridge
             // Cached.
             if (cacheFile.Exists && (DateTime.Now - cacheFile.LastWriteTime).TotalMinutes < 1)
             {
-                callback(0 < cacheFile.Length ? File.ReadLines(cacheFile.FullName) : Enumerable.Empty<string>());
+                Debug.Log($"Cached! {cacheFile.Length}");
+                callback(0 < cacheFile.Length ? File.ReadAllText(cacheFile.FullName).Split('\n') : Enumerable.Empty<string>());
             }
             else
             {
                 var script = "Packages/com.coffee.upm-git-extension/Editor/InternalAccessBridge/get-available-refs.sh";
-                var args = string.Format("{0} {1} {2}", repoUrl, cacheDir, UnityEngine.Application.unityVersion);
+                var args = string.Format("{0} {1} {2}", repoUrl, cacheDir.FullName, UnityEngine.Application.unityVersion);
+                Debug.Log(args);
                 ExecuteShell(script, args, (success) =>
                 {
                     if (success)
@@ -94,7 +121,6 @@ namespace UnityEditor.PackageManager.UI.InternalAccessBridge
                         callback(Enumerable.Empty<string>());
                 });
             }
-
         }
 
         //public static void GetPackageJson (string repoUrl, string branch, Action<string> callback)

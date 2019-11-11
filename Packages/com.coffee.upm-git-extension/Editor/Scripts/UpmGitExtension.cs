@@ -168,16 +168,16 @@ namespace Coffee.PackageManager
 #endif
 
 			// Update git packages on load packages
-			var packageList = Expose.FromObject(root.Q("packageList"));
-			Action onLoad = packageList["OnLoaded"].As<Action>();
-			onLoad += OnPackageListLoaded;
-			packageList["OnLoaded"] = Expose.FromObject(onLoad);
+			// var packageList = Expose.FromObject(root.Q("packageList"));
+			// Action onLoad = packageList["OnLoaded"].As<Action>();
+			// onLoad += OnPackageListLoaded;
+			// packageList["OnLoaded"] = Expose.FromObject(onLoad);
 
 
 #if UNITY_2019_1_OR_NEWER
 			var updateButton = root.Q("packageToolBar").Q<Button>("update");
 #else
-			OnPackageListLoaded ();
+			// OnPackageListLoaded ();
 			var updateButton = root.Q("updateCombo").Q<Button>("update");
 #endif
 

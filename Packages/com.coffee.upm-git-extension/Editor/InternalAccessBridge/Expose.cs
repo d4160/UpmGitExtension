@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Coffee.PackageManager
+namespace UnityEditor.PackageManager.UI
 {
 	public class Expose : IEnumerable
 	{
