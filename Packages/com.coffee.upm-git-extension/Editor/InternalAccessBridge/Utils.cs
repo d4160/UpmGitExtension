@@ -57,14 +57,14 @@ namespace UnityEditor.PackageManager.UI
         //public delegate void GitCommandCallback (bool success, string output);
         public delegate void CommandCallback(bool success, string output);
 
-        [MenuItem("Packages/getrefs")]
-        static void test()
-        {
-            GetRefs("git@github.com:mob-sakai/UpmGitExtension.git", refs =>
-            {
-                Debug.Log(refs.Aggregate((a, b) => a + ", " + b));
-            });
-        }
+        //[MenuItem("Packages/getrefs")]
+        //static void test()
+        //{
+        //    GetRefs("git@github.com:mob-sakai/UpmGitExtension.git", refs =>
+        //    {
+        //        Debug.Log(refs.Aggregate((a, b) => a + ", " + b));
+        //    });
+        //}
 
 
         // public static void GetPackage(string repoUrl, Action<IEnumerable<string>> callback)
@@ -94,12 +94,12 @@ namespace UnityEditor.PackageManager.UI
         //     }
         // }
 
-        public static void GetRefs(string repoUrl, Action<IEnumerable<string>> callback)
+        public static void GetRefs(string packageName, string repoUrl, Action<IEnumerable<string>> callback)
         {
             // StringBuilder command = new StringBuilder ();
 			var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var cacheRoot = new DirectoryInfo(Path.Combine(appDir, "UpmGitExtension"));
-            var cacheDir = new DirectoryInfo(Path.Combine(cacheRoot.FullName, Uri.EscapeDataString(repoUrl)));
+            var cacheDir = new DirectoryInfo(Path.Combine(cacheRoot.FullName, Uri.EscapeDataString(packageName + "@" + repoUrl)));
             var cacheFile = new FileInfo(Path.Combine(cacheDir.FullName, "versions"));
 
             // Cached.
@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI
                 ExecuteShell(script, args, (success) =>
                 {
                     if (success)
-                        GetRefs(repoUrl, callback);
+                        GetRefs(packageName, repoUrl, callback);
                     else
                         callback(Enumerable.Empty<string>());
                 });

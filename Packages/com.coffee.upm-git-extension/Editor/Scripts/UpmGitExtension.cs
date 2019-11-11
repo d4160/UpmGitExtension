@@ -62,6 +62,7 @@ namespace Coffee.PackageManager
 		/// <param name="packageInfo">The newly selected package information (can be null)</param>
 		public void OnPackageSelectionChange (PackageInfo packageInfo)
 		{
+			Debug.Log ("OnPackageSelectionChange");
 			InitializeUI ();
 			if (phase == Phase.Initialize || packageInfo == null)
 				return;
@@ -143,11 +144,17 @@ namespace Coffee.PackageManager
 			if (!DocumentActions.IsResourceReady() || !InstallPackageWindow.IsResourceReady() || !GitButton.IsResourceReady())
 				return;
 
+			Debug.Log ("InitializeUI");
+
+
 			phase = Phase.Idle;
 
 			root = UIUtils.GetRoot(this).Q("container");
 
-			internalBridge = new InternalBridge (root.Q ("packageSpinner"), root.Q ("packageList"), root.Q ("packageList"));
+			internalBridge = InternalBridge.Instance;
+			internalBridge.Setup (root.Q ("packageSpinner"), root.Q ("packageList"), root.Q ("detailsGroup"));
+			internalBridge.AddCallback (InternalBridge.AssemblyTest4);
+
 
 			// Document actions.
 			documentActions = new DocumentActions(root.Q("detailActions"));
@@ -178,54 +185,62 @@ namespace Coffee.PackageManager
 			var updateButton = root.Q("packageToolBar").Q<Button>("update");
 #else
 			// OnPackageListLoaded ();
+			InternalBridge.AssemblyTest4 ();
 			var updateButton = root.Q("updateCombo").Q<Button>("update");
 #endif
 
 			var detailView = Expose.FromObject(root.Q("detailsGroup"));
 
 			// Override click action.
-			Action actionUpdate = () =>
-			{
+//			Action actionUpdate = () =>
+//			{
 			
-#if UNITY_2019_1_OR_NEWER
-				var exTargetPackage = detailView["TargetVersion"];
-#else
-				var exTargetPackage = detailView["SelectedPackage"];
-#endif
-				if (exTargetPackage["Origin"].As<int>() == 99)
-				{
-					var packageId = exTargetPackage["Info"]["m_PackageId"].As<string>();
-					string packageIdPrefix = regInstallVersion.Replace(packageId, "");
-					string refName = exTargetPackage["Version"].ToString().Replace("0.0.0-", "");
-					packageId = packageIdPrefix + "#" + refName;
+//#if UNITY_2019_1_OR_NEWER
+//				var exTargetPackage = detailView["TargetVersion"];
+//#else
+//				var exTargetPackage = detailView["SelectedPackage"];
+//#endif
+//				if (exTargetPackage["Origin"].As<int>() == 99)
+//				{
+//					var packageId = exTargetPackage["Info"]["m_PackageId"].As<string>();
+//					string packageIdPrefix = regInstallVersion.Replace(packageId, "");
+//					string refName = exTargetPackage["Version"].ToString().Replace("0.0.0-", "");
+//					packageId = packageIdPrefix + "#" + refName;
 
-					var m = Regex.Match (packageId, "([^@]+)@(.*)");
-					if(m.Success)
-					{
-						var l = string.Format ("\"{0}\": \"{1}\",", m.Groups [1].Value, m.Groups [2].Value);
-						Debug.Log (l);
-						var manifest = MiniJSON.Json.Deserialize (System.IO.File.ReadAllText ("Packages/manifest.json")) as Dictionary<string,object>;
-						var dependencies = manifest ["dependencies"] as Dictionary<string, object>;
+//					var m = Regex.Match (packageId, "([^@]+)@(.*)");
+//					if(m.Success)
+//					{
+//						var l = string.Format ("\"{0}\": \"{1}\",", m.Groups [1].Value, m.Groups [2].Value);
+//						Debug.Log (l);
+//						var manifest = MiniJSON.Json.Deserialize (System.IO.File.ReadAllText ("Packages/manifest.json")) as Dictionary<string,object>;
+//						var dependencies = manifest ["dependencies"] as Dictionary<string, object>;
 
-						dependencies.Remove (m.Groups [1].Value);
-						dependencies.Add (m.Groups [1].Value, m.Groups [2].Value);
+//						//dependencies.Remove (m.Groups [1].Value);
+//						//dependencies.Add (m.Groups [1].Value, m.Groups [2].Value);
 
-						System.IO.File.WriteAllText ("Packages/manifest.json", MiniJSON.Json.Serialize (manifest));
-						UnityEditor.AssetDatabase.Refresh (ImportAssetOptions.ForceUpdate);
-					}
-				}
-				else
-				{
-					detailView.Call ("UpdateClick");
-				}
-			};
-			Expose.FromObject(updateButton.clickable)["clicked"] = Expose.FromObject(actionUpdate);
+//						//System.IO.File.WriteAllText ("Packages/manifest.json", MiniJSON.Json.Serialize (manifest));
+//						//UnityEditor.AssetDatabase.Refresh (ImportAssetOptions.ForceUpdate);
+//					}
+//				}
+//				else
+//				{
+//					detailView.Call ("UpdateClick");
+//				}
+//			};
 
-			Settings.onChangedShowAllVersions = ReloadPackageCollection;
+//			actionUpdate = internalBridge.UpdateCallback;
+
+			//updateButton.clickable = new Clickable (internalBridge.UpdateCallback);
+			//Expose.FromObject (updateButton.clickable) ["clicked"] = Expose.FromObject (actionUpdate);
+			updateButton.RemoveManipulator (updateButton.clickable);
+			updateButton.clickable = new Clickable (internalBridge.UpdateCallback);
+			updateButton.AddManipulator (updateButton.clickable);
+
+			//Settings.onChangedShowAllVersions = ReloadPackageCollection;
 
 		}
 
-		
+
 		void UpdateGitPackages(Queue<Expose> packagesToUpdate, Dictionary<string, IEnumerable<string>> results = null)
 		{
 			Debug.LogFormat ("[UpdateGitPackages] {0} package(s) left", packagesToUpdate.Count);
