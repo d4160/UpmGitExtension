@@ -12,6 +12,8 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using Conditional = System.Diagnostics.ConditionalAttribute;
+using Markdig;
+// using Semver;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -45,11 +47,11 @@ namespace UnityEditor.PackageManager.UI
     //	}
     //}
 
-    internal static class GitUtils
+    public static class GitUtils
     {
         static readonly StringBuilder s_sbError = new StringBuilder();
         static readonly StringBuilder s_sbOutput = new StringBuilder();
-        static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/(.*),(.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
+        // static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/(.*),(.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
 
 
         //public static bool IsGitRunning { get; private set; }
@@ -70,7 +72,7 @@ namespace UnityEditor.PackageManager.UI
         // public static void GetPackage(string repoUrl, Action<IEnumerable<string>> callback)
         // {
         //     // StringBuilder command = new StringBuilder ();
-		// 	var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        // 	var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         //     var cacheRoot = new DirectoryInfo(Path.Combine(appDir, "UpmGitExtension"));
         //     var cacheDir = new DirectoryInfo(Path.Combine(cacheRoot.FullName, Uri.EscapeDataString(repoUrl)));
         //     var cacheFile = new FileInfo(Path.Combine(cacheDir.FullName, "versions"));
@@ -94,25 +96,32 @@ namespace UnityEditor.PackageManager.UI
         //     }
         // }
 
+        static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/([^/]+),(.+),(.+)$", RegexOptions.Compiled);
+
+			
+        // repourlから
         public static void GetRefs(string packageName, string repoUrl, Action<IEnumerable<string>> callback)
         {
             // StringBuilder command = new StringBuilder ();
-			var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var cacheRoot = new DirectoryInfo(Path.Combine(appDir, "UpmGitExtension"));
             var cacheDir = new DirectoryInfo(Path.Combine(cacheRoot.FullName, Uri.EscapeDataString(packageName + "@" + repoUrl)));
             var cacheFile = new FileInfo(Path.Combine(cacheDir.FullName, "versions"));
 
             // Cached.
-            if (cacheFile.Exists && (DateTime.Now - cacheFile.LastWriteTime).TotalMinutes < 1)
+            if (cacheFile.Exists && (DateTime.Now - cacheFile.LastWriteTime).TotalMinutes < 5)
             {
-                Debug.Log($"Cached! {cacheFile.Length}");
-                callback(0 < cacheFile.Length ? File.ReadAllText(cacheFile.FullName).Split('\n') : Enumerable.Empty<string>());
+                var versions =  File.ReadAllText(cacheFile.FullName)
+                    .Split('\n')
+                    .Select(r => s_regRefs.Match(r))
+                    .Where(m => m.Success && (packageName.Length == 0 || packageName == m.Groups[4].Value))
+                    .Select(m =>m.Groups[2].Value + "," + m.Groups[3].Value + "," + m.Groups[4].Value);
+                callback(versions);
             }
             else
             {
                 var script = "Packages/com.coffee.upm-git-extension/Editor/InternalAccessBridge/get-available-refs.sh";
                 var args = string.Format("{0} {1} {2}", repoUrl, cacheDir.FullName, UnityEngine.Application.unityVersion);
-                Debug.Log(args);
                 ExecuteShell(script, args, (success) =>
                 {
                     if (success)
@@ -228,48 +237,48 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        static void ExecuteGitCommand(string args, CommandCallback callback, string cwd = null)
-        {
-            var startInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                Arguments = args,
-                CreateNoWindow = true,
-                FileName = "/bin/sh",
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                WorkingDirectory = cwd ?? Directory.GetCurrentDirectory(),
-            };
+        // static void ExecuteGitCommand(string args, CommandCallback callback, string cwd = null)
+        // {
+        //     var startInfo = new System.Diagnostics.ProcessStartInfo
+        //     {
+        //         Arguments = args,
+        //         CreateNoWindow = true,
+        //         FileName = "/bin/sh",
+        //         RedirectStandardError = true,
+        //         RedirectStandardOutput = true,
+        //         UseShellExecute = false,
+        //         WorkingDirectory = cwd ?? Directory.GetCurrentDirectory(),
+        //     };
 
-            Debug.LogFormat("[GitUtils]: Start command: args = {0}", args);
-            var launchProcess = System.Diagnostics.Process.Start(startInfo);
-            if (launchProcess == null || launchProcess.HasExited == true || launchProcess.Id == 0)
-            {
-                Debug.LogError("No 'git' executable was found. Please install Git on your system and restart Unity");
-                callback(false, "");
-            }
-            else
-            {
-                //Add process callback.
-                s_sbError.Length = 0;
-                s_sbOutput.Length = 0;
-                launchProcess.OutputDataReceived += (sender, e) => s_sbOutput.AppendLine(e.Data ?? "");
-                launchProcess.ErrorDataReceived += (sender, e) => s_sbError.AppendLine(e.Data ?? "");
-                launchProcess.Exited += (sender, e) =>
-                {
-                    bool success = 0 == launchProcess.ExitCode;
-                    if (!success)
-                    {
-                        Debug.LogErrorFormat("Error: {0}\n\n{1}", args, s_sbError);
-                    }
-                    callback(success, s_sbOutput.ToString());
-                };
+        //     Debug.LogFormat("[GitUtils]: Start command: args = {0}", args);
+        //     var launchProcess = System.Diagnostics.Process.Start(startInfo);
+        //     if (launchProcess == null || launchProcess.HasExited == true || launchProcess.Id == 0)
+        //     {
+        //         Debug.LogError("No 'git' executable was found. Please install Git on your system and restart Unity");
+        //         callback(false, "");
+        //     }
+        //     else
+        //     {
+        //         //Add process callback.
+        //         s_sbError.Length = 0;
+        //         s_sbOutput.Length = 0;
+        //         launchProcess.OutputDataReceived += (sender, e) => s_sbOutput.AppendLine(e.Data ?? "");
+        //         launchProcess.ErrorDataReceived += (sender, e) => s_sbError.AppendLine(e.Data ?? "");
+        //         launchProcess.Exited += (sender, e) =>
+        //         {
+        //             bool success = 0 == launchProcess.ExitCode;
+        //             if (!success)
+        //             {
+        //                 Debug.LogErrorFormat("Error: {0}\n\n{1}", args, s_sbError);
+        //             }
+        //             callback(success, s_sbOutput.ToString());
+        //         };
 
-                launchProcess.BeginOutputReadLine();
-                launchProcess.BeginErrorReadLine();
-                launchProcess.EnableRaisingEvents = true;
-            }
-        }
+        //         launchProcess.BeginOutputReadLine();
+        //         launchProcess.BeginErrorReadLine();
+        //         launchProcess.EnableRaisingEvents = true;
+        //     }
+        // }
     }
 
     //internal static class UIUtils
@@ -513,31 +522,94 @@ namespace UnityEditor.PackageManager.UI
     //		}
     //	}
     //}
+    public static class PackageUtilsXXX
+    {
+        public static void InstallPackage(string packageName, string url, string refName)
+        {
+            const string manifestPath = "Packages/manifest.json";
+            var manifest = MiniJSON.Json.Deserialize(System.IO.File.ReadAllText(manifestPath)) as Dictionary<string, object>;
+            var dependencies = manifest["dependencies"] as Dictionary<string, object>;
 
-    //internal static class MarkdownUtils
-    //{
-    //	const string k_CssFileName = "github-markdown";
+            dependencies.Add(packageName, url + "#" + refName);
 
-    //	static readonly MarkdownPipeline s_Pipeline = new MarkdownPipelineBuilder ().UseAdvancedExtensions ().Build ();
-    //	static readonly string s_TempDir = Path.Combine (Directory.GetCurrentDirectory (), "Temp");
+            System.IO.File.WriteAllText(manifestPath, MiniJSON.Json.Serialize(manifest));
+            UnityEditor.EditorApplication.delayCall += () => UnityEditor.AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+        }
 
-    //	public static void OpenInBrowser (string path)
-    //	{
-    //		string cssPath = Path.Combine (s_TempDir, k_CssFileName + ".css");
-    //		if (!File.Exists (cssPath))
-    //		{
-    //			File.Copy (AssetDatabase.GUIDToAssetPath (AssetDatabase.FindAssets (k_CssFileName) [0]), cssPath);
-    //		}
+        public static void RemovePackage(string packageName)
+        {
+            const string manifestPath = "Packages/manifest.json";
+            var manifest = MiniJSON.Json.Deserialize(System.IO.File.ReadAllText(manifestPath)) as Dictionary<string, object>;
+            var dependencies = manifest["dependencies"] as Dictionary<string, object>;
 
-    //		var htmlPath = Path.Combine (s_TempDir, Path.GetFileNameWithoutExtension (path) + ".html");
-    //		using (StreamReader sr = new StreamReader (path))
-    //		using (StreamWriter sw = new StreamWriter (htmlPath))
-    //		{
-    //			sw.WriteLine ("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + k_CssFileName + ".css\">");
-    //			sw.Write (Markdown.ToHtml (sr.ReadToEnd (), s_Pipeline));
-    //		}
+            dependencies.Remove(packageName);
 
-    //		Application.OpenURL ("file://" + htmlPath);
-    //	}
-    //}
+            System.IO.File.WriteAllText(manifestPath, MiniJSON.Json.Serialize(manifest));
+            UnityEditor.EditorApplication.delayCall += () => UnityEditor.AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+        }
+
+        public static string GetFilePath(string resolvedPath, string filePattern)
+        {
+            if (string.IsNullOrEmpty(resolvedPath) || string.IsNullOrEmpty(filePattern))
+                return "";
+
+            foreach (var path in Directory.GetFiles(resolvedPath, filePattern))
+            {
+                if (!path.EndsWith(".meta", StringComparison.Ordinal))
+                {
+                    return path;
+                }
+            }
+            return "";
+        }
+
+        public static string GetRepoHttpsUrl (string packageId)
+		{
+			Match m = Regex.Match (packageId, "^[^@]+@([^#]+)(#.+)?$");
+			if (m.Success)
+			{
+				var repoUrl = m.Groups [1].Value;
+				repoUrl = Regex.Replace (repoUrl, "(git:)?git@([^:]+):", "https://$2/");
+				repoUrl = repoUrl.Replace ("ssh://", "https://");
+				repoUrl = repoUrl.Replace ("git@", "");
+				repoUrl = Regex.Replace (repoUrl, "\\.git$", "");
+
+				return repoUrl;
+			}
+			return "";
+		}
+    }
+
+
+    // internal static class MarkdownUtils
+    // {
+    //     const string k_CssFileName = "github-markdown";
+
+    //     static readonly MarkdownPipeline s_Pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+    //     static readonly string s_TempDir = Path.Combine(Directory.GetCurrentDirectory(), "Temp");
+
+    //     public static void OpenInBrowser(string path)
+    //     {
+    //         if(path.Length == 0 || !File.Exists(path))
+    //         {
+    //             return;
+    //         }
+
+    //         string cssPath = Path.Combine(s_TempDir, k_CssFileName + ".css");
+    //         if (!File.Exists(cssPath))
+    //         {
+    //             File.Copy(AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets(k_CssFileName)[0]), cssPath);
+    //         }
+
+    //         var htmlPath = Path.Combine(s_TempDir, Path.GetFileNameWithoutExtension(path) + ".html");
+    //         using (StreamReader sr = new StreamReader(path))
+    //         using (StreamWriter sw = new StreamWriter(htmlPath))
+    //         {
+    //             sw.WriteLine("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + k_CssFileName + ".css\">");
+    //             sw.Write(Markdown.ToHtml(sr.ReadToEnd(), s_Pipeline));
+    //         }
+
+    //         Application.OpenURL("file://" + htmlPath);
+    //     }
+    // }
 }

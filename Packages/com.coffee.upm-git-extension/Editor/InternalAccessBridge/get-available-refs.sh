@@ -38,6 +38,7 @@ do
     [[ "${UNITY}" < "${SUPPORTED_VERSION}" ]] && continue
     echo "  -> OK 2"
 
+    NAME=`grep -o -e "\"name\".*$" package.json | sed -e "s/\"name\": \"\(.*\)\".*$/\1/"`
 	# Output only available names
-    echo ${ref},${VERSION} >> versions
+    echo ${ref},${VERSION},${NAME} >> versions
 done
