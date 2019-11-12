@@ -180,7 +180,12 @@ namespace UnityEditor.PackageManager.UI
 #if UNITY_2019_1_OR_NEWER
             return PackageCollection.packages.Values.Distinct();
 #else
-            return Expose.FromObject(PackageCollection.Instance).Get("packages").As<IEnumerable<Package>>().Distinct();
+            var collection = PackageCollection.Instance;
+            return collection?.LatestListPackages
+                .Select(x => x.Name)
+                .Distinct()
+                .Select(collection.GetPackageByName)
+                .Distinct() ?? Enumerable.Empty<Package>();
 #endif
         }
 
