@@ -12,7 +12,6 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using Conditional = System.Diagnostics.ConditionalAttribute;
-using Markdig;
 // using Semver;
 
 namespace UnityEditor.PackageManager.UI
