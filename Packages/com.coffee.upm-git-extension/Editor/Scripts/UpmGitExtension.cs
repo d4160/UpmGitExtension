@@ -197,10 +197,12 @@ namespace Coffee.PackageManager
 				// hostButton.style.paddingLeft = 0;
 				hostButton.style.marginRight = 2;
 				hostButton.style.marginLeft = 2;
-				hostButton.style.sliceBottom = 0;
-				hostButton.style.sliceTop = 0;
-				hostButton.style.sliceRight = 0;
-				hostButton.style.sliceLeft = 0;
+
+				// hostButton.style.sliceBottom = 0;
+				// hostButton.style.sliceTop = 0;
+				// hostButton.style.sliceRight = 0;
+				// hostButton.style.sliceLeft = 0;
+
 				hostButton.style.width = 16;
 				hostButton.style.height = 16;
 				// var link = root.Q<Button>("viewLicenses").style.cursor.value.texture;

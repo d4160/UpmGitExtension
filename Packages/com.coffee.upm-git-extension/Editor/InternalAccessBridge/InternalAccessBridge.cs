@@ -42,8 +42,13 @@ namespace UnityEditor.PackageManager.UI
         // Button ViewChangelogButton = null;
         // Button ViewLicensesButton = null;
         // Button ViewReadmeButton = null;
+                
 
+#if UNITY_2019_1_OR_NEWER
+        PackageInfo DisplayPackage { get { return Expose.FromObject(packageDetails).Get("DisplayPackage").As<PackageInfo>(); } }
+#else
         PackageInfo DisplayPackage { get { return this.packageDetails.VersionPopup.value.Version; } }
+#endif
 
 
         // string GetFilePath(PackageInfo packageInfo, string filePattern)
@@ -108,7 +113,7 @@ namespace UnityEditor.PackageManager.UI
         //     button.AddManipulator(button.clickable);
         // }
 
-        void ViewDocmentationClick(string filePattern, Action<string> action, Func<string> defaultFunc)
+        void ViewDocmentationClick(string filePattern, Action<string> action, Action defaultAction)
         {
             if (DisplayPackage.Info.source == PackageSource.Git)
             {
@@ -116,7 +121,7 @@ namespace UnityEditor.PackageManager.UI
             }
             else
             {
-                Application.OpenURL(defaultFunc());
+                defaultAction();
             }
         }
 
@@ -127,15 +132,15 @@ namespace UnityEditor.PackageManager.UI
 
         public void ViewDocClick(Action<string> action)
         {
-            ViewDocmentationClick("README.*", action, DisplayPackage.GetDocumentationUrl);
+            ViewDocmentationClick("README.*", action, ()=>Expose.FromObject(packageDetails).Call("ViewDocClick"));
         }
         public void ViewChangelogClick(Action<string> action)
         {
-            ViewDocmentationClick("CHANGELOG.*", action, DisplayPackage.GetChangelogUrl);
+            ViewDocmentationClick("CHANGELOG.*", action, ()=>Expose.FromObject(packageDetails).Call("ViewChangelogClick"));
         }
         public void ViewLicensesClick(Action<string> action)
         {
-            ViewDocmentationClick("LICENSE.*", action, DisplayPackage.GetLicensesUrl);
+            ViewDocmentationClick("LICENSE.*", action, ()=>Expose.FromObject(packageDetails).Call("ViewLicensesClick"));
         }
 
         public void ViewRepoClick()
@@ -172,12 +177,11 @@ namespace UnityEditor.PackageManager.UI
 
         static IEnumerable<Package> GetAllPackages()
         {
-            var collection = PackageCollection.Instance;
-            return collection?.LatestListPackages
-                .Select(x => x.Name)
-                .Distinct()
-                .Select(collection.GetPackageByName)
-                .Distinct() ?? Enumerable.Empty<Package>();
+#if UNITY_2019_1_OR_NEWER
+            return PackageCollection.packages.Values.Distinct();
+#else
+            return Expose.FromObject(PackageCollection.Instance).Get("packages").As<IEnumerable<Package>>().Distinct();
+#endif
         }
 
         // public void AddCallback(Action action)
@@ -275,7 +279,7 @@ namespace UnityEditor.PackageManager.UI
 
             // Get git packages.
             var gitPackages = GetAllPackages()
-                .Where(x => x.Current.Origin == PackageSource.Git || x.Current.Origin == (PackageSource)99)
+                .Where(x => x != null && x.Current != null && (x.Current.Origin == PackageSource.Git || x.Current.Origin == (PackageSource)99))
                 .ToArray();
 
             if (gitPackages.Length == 0) return;
@@ -342,15 +346,24 @@ namespace UnityEditor.PackageManager.UI
             if (0 < versionInfos.Length)
             {
                 versionInfos.OrderBy(v => v.Version).Last().IsLatest = true;
-                package.UpdateSource(versionInfos);
+                // package.UpdateSource(versionInfos);
+                Expose.FromObject(package).Set("source", versionInfos);
+                
             }
         }
 
         void UpdatePackageCollection()
         {
             // Debug.LogFormat("[UpdateGitPackages] Reloading package collection...");
-            var collection = PackageCollection.Instance;
-            collection?.UpdatePackageCollection(false);
+            GetPackageWindow().Collection.UpdatePackageCollection(false);
+            // var collection = PackageCollection.Instance;
+            // collection?.UpdatePackageCollection(false);
+        }
+
+        PackageManagerWindow _packageWindow;
+        PackageManagerWindow GetPackageWindow()
+        {
+            return _packageWindow ?? (_packageWindow = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>().FirstOrDefault());
         }
     }
 }
