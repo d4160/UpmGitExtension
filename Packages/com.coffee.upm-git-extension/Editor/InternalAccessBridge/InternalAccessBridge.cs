@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI
 #if UNITY_2019_1_OR_NEWER
         object SelectedPackage { get { return Expose.FromObject(packageDetails).Get("TargetVersion").As<PackageInfo>(); } }
 #else
-        object SelectedPackage { get { return (this.packageDetails as PackageDetails).SelectedPackage; } }
+        object SelectedPackage { get { return Expose.FromObject (packageDetails).Get ("SelectedPackage").As<PackageInfo> (); } }
 #endif
 
         private InternalBridge() { }
