@@ -4,18 +4,24 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.PackageManager.UI;
 
-public class Bubuka
+namespace hogehogehoge
 {
-    // Start is called before the first frame update
-    [MenuItem("fuga/fuga")]
-    static void Start()
+
+    public class Bubuka
     {
-        InternalBridge.Instance.UpdateGitPackages();
+        // Start is called before the first frame update
+        [MenuItem("fuga/fuga")]
+        static void Start()
+        {
+            Debug.Log(typeof(InternalBridge).AssemblyQualifiedName);
+            InternalBridge.Instance.UpdateGitPackages();
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

@@ -6,11 +6,11 @@ PluginImporter:
   iconMap: {}
   executionOrder: {}
   defineConstraints:
-  - UNITY_2018_3_OR_NEWER
-  - '!UNITY_2019'
+  - UNITY_2018_3
+  - UNITY_2018_4
   isPreloaded: 0
   isOverridable: 1
-  isExplicitlyReferenced: 0
+  isExplicitlyReferenced: 1
   validateReferences: 1
   platformData:
   - first:
