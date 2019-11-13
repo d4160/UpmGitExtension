@@ -8,6 +8,7 @@ using UnityEditor.PackageManager.UI;
 using System.Text.RegularExpressions;
 using System.IO;
 using Semver;
+using System.Runtime.CompilerServices;
 
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
@@ -15,6 +16,8 @@ using UnityEngine.UIElements;
 using UnityEngine.Experimental.UIElements;
 #endif
 
+
+[assembly: IgnoresAccessChecksTo("Unity.PackageManagerUI.Editor")]
 namespace UnityEditor.PackageManager.UI
 {
     public static class ButtonExtension
@@ -33,47 +36,15 @@ namespace UnityEditor.PackageManager.UI
         private static InternalBridge instance = new InternalBridge();
         public static InternalBridge Instance { get { return instance; } }
 
-
-        LoadingSpinner loadingSpinner = null;
-        PackageList packageList = null;
-        PackageDetails packageDetails = null;
-
-        // Button ViewDocButton = null;
-        // Button ViewChangelogButton = null;
-        // Button ViewLicensesButton = null;
-        // Button ViewReadmeButton = null;
-                
+        VisualElement loadingSpinner = null;
+        VisualElement packageList = null;
+        VisualElement packageDetails = null;
 
 #if UNITY_2019_1_OR_NEWER
-        PackageInfo DisplayPackage { get { return Expose.FromObject(packageDetails).Get("DisplayPackage").As<PackageInfo>(); } }
+        object DisplayPackage { get { return Expose.FromObject(packageDetails).Get("DisplayPackage").As<PackageInfo>(); } }
 #else
-        PackageInfo DisplayPackage { get { return this.packageDetails.VersionPopup.value.Version; } }
+        object DisplayPackage { get { return (this.packageDetails as PackageDetails).VersionPopup.value.Version; } }
 #endif
-
-
-        // string GetFilePath(PackageInfo packageInfo, string filePattern)
-        // {
-        //     Debug.Log(packageInfo.Info.resolvedPath);
-        //     return packageInfo != null
-        //         ? GetFilePath(packageInfo.Info.resolvedPath, filePattern)
-        //         : "";
-        // }
-
-        // string GetFilePath(string resolvedPath, string filePattern)
-        // {
-        //     if (string.IsNullOrEmpty(resolvedPath) || string.IsNullOrEmpty(filePattern))
-        //         return "";
-
-        //     foreach (var path in Directory.GetFiles(resolvedPath, filePattern))
-        //     {
-        //         if (!path.EndsWith(".meta", StringComparison.Ordinal))
-        //         {
-        //             return path;
-        //         }
-        //     }
-        //     return "";
-        // }
-
 
         private InternalBridge() { }
 
@@ -83,41 +54,16 @@ namespace UnityEditor.PackageManager.UI
             this.packageList = packageList as PackageList;
             this.packageDetails = packageDetails as PackageDetails;
 
-            // this.ViewDocButton = packageDetails.Q<Button>("viewDocumentation");
-            // this.ViewChangelogButton = packageDetails.Q<Button>("viewChangelog");
-            // this.ViewLicensesButton = packageDetails.Q<Button>("viewLicenses");
-
-            // var hostButton = packageDetails.Q<Button>("hostButton");
-            // if (hostButton == null)
-            // {
-            //     hostButton = new Button() { text = "hostButton", name = "hostButton", tooltip = "View on browser" };
-            //     hostButton.RemoveFromClassList("unity-button");
-            //     hostButton.RemoveFromClassList("button");
-            //     packageDetails.Q("detailVersion").parent.Add(hostButton);
-            // }
-
-            // ViewDocButton.OverwriteCallback(()=>ViewDocmentationClick("README.*", DisplayPackage.GetDocumentationUrl));
-            // ViewChangelogButton.OverwriteCallback(()=>ViewDocmentationClick("CHANGELOG.*", DisplayPackage.GetChangelogUrl));
-            // ViewLicensesButton.OverwriteCallback(()=>ViewDocmentationClick("LICENSE.*", DisplayPackage.GetLicensesUrl));
-            // ViewChangelogButton.OverwriteCallback(ViewChangelogClick);
-            // ViewLicensesButton.OverwriteCallback(ViewLicensesClick);
-
-            this.packageList.OnLoaded -= UpdateGitPackages;
-            this.packageList.OnLoaded += UpdateGitPackages;
+            (packageList as PackageList).OnLoaded -= UpdateGitPackages;
+            // (packageList as PackageList).OnLoaded += UpdateGitPackages;
         }
-
-        // void OverwriteClickable(Button button, Action action)
-        // {
-        //     button.RemoveManipulator(button.clickable);
-        //     button.clickable = new Clickable(action);
-        //     button.AddManipulator(button.clickable);
-        // }
 
         void ViewDocmentationClick(string filePattern, Action<string> action, Action defaultAction)
         {
-            if (DisplayPackage.Info.source == PackageSource.Git)
+            var displayPackage = DisplayPackage as PackageInfo;
+            if (displayPackage .Info.source == PackageSource.Git)
             {
-                action(PackageUtilsXXX.GetFilePath(DisplayPackage.Info.resolvedPath, filePattern));
+                action(PackageUtilsXXX.GetFilePath(displayPackage.Info.resolvedPath, filePattern));
             }
             else
             {
@@ -125,10 +71,6 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        // public void ViewDocClick(Action<string> action)
-        // {
-        //     ViewDocmentationClick("README.*", DisplayPackage.GetDocumentationUrl);
-        // }
 
         public void ViewDocClick(Action<string> action)
         {
@@ -145,34 +87,9 @@ namespace UnityEditor.PackageManager.UI
 
         public void ViewRepoClick()
         {
-            Application.OpenURL(PackageUtilsXXX.GetRepoHttpsUrl(DisplayPackage.Info.packageId));
+            var displayPackage = DisplayPackage as PackageInfo;
+            Application.OpenURL(PackageUtilsXXX.GetRepoHttpsUrl(displayPackage.Info.packageId));
         }
-
-
-        // void ViewChangelogClick()
-        // {
-        //     if (DisplayPackage.Info.source == PackageSource.Git)
-        //     {
-        //         MarkdownUtils.OpenInBrowser(GetFilePath(DisplayPackage, "CHANGELOG.*"));
-        //     }
-        //     else
-        //     {
-        //         Application.OpenURL(DisplayPackage.GetDocumentationUrl());
-        //     }
-        // }
-
-
-        // void ViewLicensesClick()
-        // {
-        //     if (DisplayPackage.Info.source == PackageSource.Git)
-        //     {
-        //         MarkdownUtils.OpenInBrowser(GetFilePath(DisplayPackage, "LICENSE.*"));
-        //     }
-        //     else
-        //     {
-        //         Application.OpenURL(DisplayPackage.GetDocumentationUrl());
-        //     }
-        // }
 
 
         static IEnumerable<Package> GetAllPackages()
@@ -189,62 +106,21 @@ namespace UnityEditor.PackageManager.UI
 #endif
         }
 
-        // public void AddCallback(Action action)
-        // {
-        //     // packageList.OnLoaded -= action;
-        //     // packageList.OnLoaded += action;
-        // }
-
 
         public void StartSpinner()
         {
-            if (loadingSpinner != null)
-                loadingSpinner.Start();
+            (loadingSpinner as LoadingSpinner)?.Start();
         }
 
         public void StopSpinner()
         {
-            if (loadingSpinner != null)
-                loadingSpinner.Stop();
+            (loadingSpinner as LoadingSpinner)?.Stop();
         }
-
-        // public void SetElementDisplay(VisualElement element, bool visible)
-        // {
-        //     UIUtils.SetElementDisplay(element, visible);
-        //     element.visible = visible;
-        // }
-
-        // static readonly Regex s_regRefs = new Regex("refs/(tags|remotes/origin)/([^/]+),(.+)$", RegexOptions.Compiled);
         static readonly Regex s_RepoUrl = new Regex("^([^@]+)@([^#]+)(#.+)?$", RegexOptions.Compiled);
-        // static readonly Regex s_VersionRef = new Regex(@"^(.+)---(.*)?$", RegexOptions.Compiled);
-
-        // public void InstallPackage(string packageName, string url, string refName)
-        // {
-        //     const string manifestPath = "Packages/manifest.json";
-        //     var manifest = MiniJSON.Json.Deserialize(System.IO.File.ReadAllText(manifestPath)) as Dictionary<string, object>;
-        //     var dependencies = manifest["dependencies"] as Dictionary<string, object>;
-
-        //     dependencies.Add(packageName, url + "#" + refName);
-
-        //     System.IO.File.WriteAllText(manifestPath, MiniJSON.Json.Serialize(manifest));
-        //     UnityEditor.EditorApplication.delayCall += () => UnityEditor.AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-        // }
-
-        // public void RemovePackage(string packageName)
-        // {
-        //     const string manifestPath = "Packages/manifest.json";
-        //     var manifest = MiniJSON.Json.Deserialize(System.IO.File.ReadAllText(manifestPath)) as Dictionary<string, object>;
-        //     var dependencies = manifest["dependencies"] as Dictionary<string, object>;
-
-        //     dependencies.Remove(packageName);
-
-        //     System.IO.File.WriteAllText(manifestPath, MiniJSON.Json.Serialize(manifest));
-        //     UnityEditor.EditorApplication.delayCall += () => UnityEditor.AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-        // }
 
         public void UpdateClick()
         {
-            var packageInfo = DisplayPackage;
+            var packageInfo = DisplayPackage as PackageInfo;
             if (packageInfo.Info.source == PackageSource.Git)
             {
                 string packageId = packageInfo.Info.packageId;
@@ -261,7 +137,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void RemoveClick()
         {
-            var packageInfo = DisplayPackage;
+            var packageInfo = DisplayPackage as PackageInfo;
             if (packageInfo.Info.source == PackageSource.Git)
             {
                 PackageUtilsXXX.RemovePackage(packageInfo.Name);
@@ -277,9 +153,6 @@ namespace UnityEditor.PackageManager.UI
 
         public void UpdateGitPackages()
         {
-
-            // Debug.Log(" ============= UpdateGitPackages skip=" + reloading);
-            // On reloading package list, skip updating.
             if (reloading) return;
 
             // Get git packages.
@@ -304,7 +177,6 @@ namespace UnityEditor.PackageManager.UI
                 pInfo.Origin = (PackageSource)99;
                 var json = JsonUtility.ToJson(pInfo);
                 var repoUrl = s_RepoUrl.Replace(pInfo.PackageId, "$2");
-                // Debug.Log($"{pInfo.Name} -> {repoUrl}");
 
                 // Get available branch/tag names with package version. (e.g. "refs/tags/1.1.0,1.1.0")
                 GitUtils.GetRefs(pInfo.Name, repoUrl, refs =>
@@ -351,26 +223,29 @@ namespace UnityEditor.PackageManager.UI
             if (0 < versionInfos.Length)
             {
                 versionInfos.OrderBy(v => v.Version).Last().IsLatest = true;
-                // package.UpdateSource(versionInfos);
                 Expose.FromObject(package).Set("source", versionInfos);
-                
             }
         }
 
         void UpdatePackageCollection()
         {
-            // Debug.LogFormat("[UpdateGitPackages] Reloading package collection...");
-            GetPackageWindow().Collection.UpdatePackageCollection(false);
-            // var collection = PackageCollection.Instance;
-            // collection?.UpdatePackageCollection(false);
-        }
-
-        PackageManagerWindow _packageWindow;
-        PackageManagerWindow GetPackageWindow()
-        {
-            return _packageWindow ?? (_packageWindow = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>().FirstOrDefault());
+            var packageWindow = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>().FirstOrDefault();
+            packageWindow.Collection.UpdatePackageCollection(false);
         }
     }
 }
 
 
+namespace System.Runtime.CompilerServices
+{
+	[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+	public class IgnoresAccessChecksToAttribute : Attribute
+	{
+		public IgnoresAccessChecksToAttribute(string assemblyName)
+		{
+			AssemblyName = assemblyName;
+		}
+
+		public string AssemblyName { get; }
+	}
+}
