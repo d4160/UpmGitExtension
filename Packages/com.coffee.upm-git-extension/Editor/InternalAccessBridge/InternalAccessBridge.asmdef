@@ -1,5 +1,5 @@
 {
-    "name": "Unity.InternalAPIEditorBridgeDev.001",
+    "name": "Unity.PackageManagerCaptain.Editor",
     "references": [
         "Unity.PackageManagerUI.Editor"
     ],
