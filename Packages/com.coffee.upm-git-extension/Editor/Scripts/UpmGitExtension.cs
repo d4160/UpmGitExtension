@@ -169,6 +169,8 @@ namespace Coffee.PackageManager
 			initialized = true;
             // phase = Phase.Idle;
 
+            Debug.Log("InitializeUI");
+
             root = UIUtils.GetRoot(this).Q("container");
 
             var internalBridge = InternalBridge.Instance;

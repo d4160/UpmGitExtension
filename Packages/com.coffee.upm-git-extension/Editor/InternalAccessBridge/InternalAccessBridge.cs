@@ -46,22 +46,31 @@ namespace UnityEditor.PackageManager.UI
         object DisplayPackage { get { return (this.packageDetails as PackageDetails).VersionPopup.value.Version; } }
 #endif
 
+#if UNITY_2019_1_OR_NEWER
+        object SelectedPackage { get { return Expose.FromObject(packageDetails).Get("TargetVersion").As<PackageInfo>(); } }
+#else
+        object SelectedPackage { get { return (this.packageDetails as PackageDetails).SelectedPackage; } }
+#endif
+
         private InternalBridge() { }
 
         public void Setup(VisualElement loadingSpinner, VisualElement packageList, VisualElement packageDetails)
         {
+
+            Debug.Log("Setup");
+
             this.loadingSpinner = loadingSpinner as LoadingSpinner;
             this.packageList = packageList as PackageList;
             this.packageDetails = packageDetails as PackageDetails;
 
             (packageList as PackageList).OnLoaded -= UpdateGitPackages;
-            // (packageList as PackageList).OnLoaded += UpdateGitPackages;
+            (packageList as PackageList).OnLoaded += UpdateGitPackages;
         }
 
         void ViewDocmentationClick(string filePattern, Action<string> action, Action defaultAction)
         {
-            var displayPackage = DisplayPackage as PackageInfo;
-            if (displayPackage .Info.source == PackageSource.Git)
+            var displayPackage = SelectedPackage as PackageInfo;
+            if (displayPackage.Info.source == PackageSource.Git)
             {
                 action(PackageUtilsXXX.GetFilePath(displayPackage.Info.resolvedPath, filePattern));
             }
@@ -87,7 +96,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void ViewRepoClick()
         {
-            var displayPackage = DisplayPackage as PackageInfo;
+            var displayPackage = SelectedPackage as PackageInfo;
             Application.OpenURL(PackageUtilsXXX.GetRepoHttpsUrl(displayPackage.Info.packageId));
         }
 
@@ -120,12 +129,12 @@ namespace UnityEditor.PackageManager.UI
 
         public void UpdateClick()
         {
-            var packageInfo = DisplayPackage as PackageInfo;
+            var packageInfo = SelectedPackage as PackageInfo;
             if (packageInfo.Info.source == PackageSource.Git)
             {
                 string packageId = packageInfo.Info.packageId;
                 string url = s_RepoUrl.Replace(packageId, "$2");
-                string refName = packageInfo.PackageId.Split('@')[1];
+                string refName = packageInfo.VersionId.Split('@')[1];
                 PackageUtilsXXX.RemovePackage(packageInfo.Name);
                 PackageUtilsXXX.InstallPackage(packageInfo.Name, url, refName);
             }
@@ -137,7 +146,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void RemoveClick()
         {
-            var packageInfo = DisplayPackage as PackageInfo;
+            var packageInfo = SelectedPackage as PackageInfo;
             if (packageInfo.Info.source == PackageSource.Git)
             {
                 PackageUtilsXXX.RemovePackage(packageInfo.Name);
@@ -153,6 +162,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void UpdateGitPackages()
         {
+            Debug.Log("UpdateGitPackages");
             if (reloading) return;
 
             // Get git packages.

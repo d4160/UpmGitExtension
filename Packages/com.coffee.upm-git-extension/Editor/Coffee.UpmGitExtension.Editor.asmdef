@@ -12,8 +12,11 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "Markdig.dll"
+        "Markdig.dll",
+        "bridge.2018.3.dll",
+        "bridge.2019.1.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": []
 }

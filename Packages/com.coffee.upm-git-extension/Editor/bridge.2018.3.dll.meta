@@ -8,6 +8,7 @@ PluginImporter:
   defineConstraints:
   - UNITY_2018_3
   - UNITY_2018_4
+  - '!UPM_GIT_EXT_DEBUG'
   isPreloaded: 0
   isOverridable: 1
   isExplicitlyReferenced: 1
