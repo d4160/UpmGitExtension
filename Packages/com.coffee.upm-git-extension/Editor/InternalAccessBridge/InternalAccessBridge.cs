@@ -7,9 +7,10 @@ using UnityEngine;
 using UnityEditor.PackageManager.UI;
 using System.Text.RegularExpressions;
 using System.IO;
-using Semver;
 using System.Runtime.CompilerServices;
-
+#if !UNITY_2019_2_OR_NEWER
+using Semver;
+#endif
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #else
@@ -18,6 +19,7 @@ using UnityEngine.Experimental.UIElements;
 
 
 [assembly: IgnoresAccessChecksTo("Unity.PackageManagerUI.Editor")]
+[assembly: IgnoresAccessChecksTo("UnityEditor")]
 namespace UnityEditor.PackageManager.UI
 {
     public static class ButtonExtension
@@ -219,7 +221,7 @@ namespace UnityEditor.PackageManager.UI
                     var newPInfo = JsonUtility.FromJson(json, typeof(PackageInfo)) as PackageInfo;
 
                     newPInfo.Version = SemVersion.Parse(version == refName ? version : version + "-" + refName);
-                    newPInfo.IsCurrent = false;
+                    // newPInfo.IsCurrent = false;
                     newPInfo.IsVerified = false;
                     newPInfo.Origin = (PackageSource)99;
                     newPInfo.Info = pInfo.Info;
