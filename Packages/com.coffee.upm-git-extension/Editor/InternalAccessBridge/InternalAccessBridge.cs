@@ -221,7 +221,11 @@ namespace UnityEditor.PackageManager.UI
                     var newPInfo = JsonUtility.FromJson(json, typeof(PackageInfo)) as PackageInfo;
 
                     newPInfo.Version = SemVersion.Parse(version == refName ? version : version + "-" + refName);
-                    // newPInfo.IsCurrent = false;
+#if UNITY_2019_2_OR_NEWER
+                    newPInfo.IsInstalled = false;
+#else
+                    newPInfo.IsCurrent = false;
+#endif
                     newPInfo.IsVerified = false;
                     newPInfo.Origin = (PackageSource)99;
                     newPInfo.Info = pInfo.Info;
